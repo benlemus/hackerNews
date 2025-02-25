@@ -23,8 +23,13 @@ class Story {
   /** Parses hostname out of URL and returns it. */
 
   getHostName() {
-    // UNIMPLEMENTED: complete this function!
-    return "hostname.com";
+    const url = new URL(this.url);
+    const hostName = url.hostname;
+    if (hostName.includes("www.")) {
+      const removeStart = hostName.split("www.");
+      return removeStart[1];
+    }
+    return hostName;
   }
 }
 
@@ -99,6 +104,8 @@ class StoryList {
     this.stories = this.stories.filter((story) => story.storyId !== storyId);
 
     user.favorites = user.favorites.filter((s) => s.storyId !== storyId);
+
+    user.ownStories = user.ownStories.filter((s) => s.storyId !== storyId);
   }
 }
 
@@ -215,13 +222,29 @@ class User {
 
   async addStoryToFavorites(story) {
     this.favorites.push(story);
+    const favStr = JSON.stringify(this.favorites);
+    localStorage.setItem("favorites", favStr);
   }
 
   async removeStoryFromFavorites(story) {
-    this.favorites = this.favorites.filter((s) => s.storyId !== story.storyId);
+    this.favorites = this.favorites.filter((s) => s.storyId != story.storyId);
+    const favStr = JSON.stringify(this.favorites);
+    localStorage.setItem("favorites", favStr);
   }
 
   isFavorite(story) {
     return this.favorites.some((s) => s.storyId === story.storyId);
+  }
+
+  async addStoryToOwnStories(story) {
+    this.ownStories.unshift(story);
+    const ownStr = JSON.stringify(this.ownStories);
+    localStorage.setItem("ownStories", ownStr);
+  }
+
+  async removeStoryFromOwnStories(story) {
+    this.ownStories = this.ownStories.filter((s) => s.storyId != story.storyId);
+    const ownStr = JSON.stringify(this.ownStories);
+    localStorage.setItem("ownStories", ownStr);
   }
 }

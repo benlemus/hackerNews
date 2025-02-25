@@ -32,11 +32,17 @@ function updateNavOnLogin() {
   $(".main-nav-links").show();
   $navLogin.hide();
   $navLogOut.show();
+  $loginForm.hide();
+  $signupForm.hide();
+  $navSubmit.show();
+  $navfavorites.show();
+  $navMyStories.show();
   $navUserProfile.text(`${currentUser.username}`).show();
 }
 
 function navSubmitClick(e) {
   console.debug("navSubmitClick", e);
+
   hidePageComponents();
   $newStoryForm.show();
 }
@@ -45,8 +51,20 @@ $navSubmit.on("click", navSubmitClick);
 
 function navFavoriteClick(e) {
   console.debug("navFavoritesClick", e);
+
   hidePageComponents();
   putFavoriteStoriesOnPage();
 }
 
 $navfavorites.on("click", navFavoriteClick);
+
+// TO DO: ON NAV MY STORIES CLICK: SHOW OWN STORIES
+
+function navMyStoriesClick(e) {
+  console.debug("navMyStoriesClick", e);
+
+  hidePageComponents();
+  putMyStoriesOnPage();
+}
+
+$navMyStories.on("click", navMyStoriesClick);

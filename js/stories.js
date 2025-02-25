@@ -19,12 +19,13 @@ async function getAndShowStoriesOnStart() {
  * Returns the markup for the story.
  */
 
-function generateStoryMarkup(story, showDeleteBtn = true) {
-  // console.debug("generateStoryMarkup", story);
+function generateStoryMarkup(story) {
+  console.debug("generateStoryMarkup", story);
 
   const hostName = story.getHostName();
 
-  const showStar = Boolean(currentUser);
+  let showStar = Boolean(currentUser);
+  let showDeleteBtn = Boolean(currentUser);
 
   return $(`
       <li id="${story.storyId}">
@@ -46,17 +47,35 @@ function generateStoryMarkup(story, showDeleteBtn = true) {
 function getDeleteBtn() {
   return `
       <span class="trash-can">
-        <i class="fas fa-trash-alt"></i>
+          <i class="fas fa-trash-alt"></i>
       </span>`;
 }
 
 function getStar(story, user) {
   const isFavorite = user.isFavorite(story);
+
+  try {
+    const returnedJson = localStorage.getItem("favorites");
+    const returnedList = JSON.parse(returnedJson);
+
+    if (returnedList.length != 0) {
+      for (let i = 0; i <= returnedList.length - 1; i++) {
+        if (story.storyId == returnedList[i].storyId) {
+          return `
+          <span class="star">
+            <i class="fas fa-star"></i>
+          </span>`;
+        }
+      }
+    }
+  } catch (Exception) {
+    console.debug("Error reading returned list in getStar");
+  }
   const starType = isFavorite ? "fas" : "far";
   return `
-      <span class="star">
-        <i class="${starType} fa-star"></i>
-      </span>`;
+  <span class="star">
+    <i class="${starType} fa-star"></i>
+  </span>`;
 }
 
 /** Gets list of stories from server, generates their HTML, and puts on page. */
@@ -87,6 +106,7 @@ async function getAndShowNewStory(e) {
   const data = { title, author, url, username };
 
   const newStory = await storyList.addStory(currentUser, data);
+  currentUser.addStoryToOwnStories(newStory);
 
   const createdStory = generateStoryMarkup(newStory);
   $allStoriesList.prepend(createdStory);
@@ -102,16 +122,59 @@ function putFavoriteStoriesOnPage() {
 
   $favStoriesList.empty();
 
-  if (currentUser.favorites.length == 0) {
-    $favStoriesList.append("<h3>No stories added to favorites</h3>");
-  } else {
-    for (let story of currentUser.favorites) {
-      const $story = generateStoryMarkup(story);
-      $favStoriesList.append($story);
+  try {
+    const returnedJson = localStorage.getItem("favorites");
+    const returnedList = JSON.parse(returnedJson);
+
+    const stories = [];
+
+    if (returnedList.length == 0) {
+      $favStoriesList.append("<h3>No stories added to favorites</h3>");
     }
+
+    for (let i = 0; i <= returnedList.length - 1; i++) {
+      stories.push(new Story(returnedList[i]));
+    }
+
+    for (let i = 0; i <= stories.length - 1; i++) {
+      const story = generateStoryMarkup(stories[i]);
+      $favStoriesList.append(story);
+    }
+  } catch (Exception) {
+    $favStoriesList.append("<h3>No stories added to favorites</h3>");
   }
 
   $favStoriesList.show();
+}
+
+function putMyStoriesOnPage() {
+  console.debug("putMyStoriesOnPage");
+
+  $ownStoriesList.empty();
+
+  try {
+    const returnedJson = localStorage.getItem("ownStories");
+    const returnedList = JSON.parse(returnedJson);
+
+    const stories = [];
+
+    if (returnedList.length == 0) {
+      $ownStoriesList.append("<h3>No stories submitted</h3>");
+    }
+
+    for (let i = 0; i <= returnedList.length - 1; i++) {
+      stories.push(new Story(returnedList[i]));
+    }
+
+    for (let i = 0; i <= stories.length - 1; i++) {
+      const story = generateStoryMarkup(stories[i]);
+      $ownStoriesList.append(story);
+    }
+  } catch (Exception) {
+    // $ownStoriesList.append("<h3>No stories added</h3>");
+  }
+
+  $ownStoriesList.show();
 }
 
 // toggle fav
@@ -125,7 +188,6 @@ async function toggleStoryFavorite(e) {
 
   if ($tgt.hasClass("fas")) {
     await currentUser.removeStoryFromFavorites(story);
-
     $tgt.closest("i").toggleClass("fas far");
   } else {
     await currentUser.addStoryToFavorites(story);
@@ -144,8 +206,13 @@ async function deleteStory(evt) {
 
   await storyList.removeStory(currentUser, storyId);
 
+  const story = storyList.stories.find((s) => s.storyId === storyId);
+
+  currentUser.removeStoryFromOwnStories(story);
+  currentUser.removeStoryFromFavorites(story);
+
   // re-generate story list
   await putStoriesOnPage();
 }
-
+$ownStoriesList.on("click", ".trash-can", deleteStory);
 $allLists.on("click", ".trash-can", deleteStory);
