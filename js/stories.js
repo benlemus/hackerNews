@@ -125,6 +125,7 @@ function putFavoriteStoriesOnPage() {
   try {
     const returnedJson = localStorage.getItem("favorites");
     const returnedList = JSON.parse(returnedJson);
+    console.log(returnedList);
 
     const stories = [];
 
@@ -212,7 +213,7 @@ async function deleteStory(evt) {
   currentUser.removeStoryFromFavorites(story);
 
   // re-generate story list
-  await putStoriesOnPage();
+  putStoriesOnPage();
 }
 $ownStoriesList.on("click", ".trash-can", deleteStory);
 $allLists.on("click", ".trash-can", deleteStory);
